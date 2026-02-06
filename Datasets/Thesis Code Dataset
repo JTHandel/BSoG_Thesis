@@ -1,4 +1,3 @@
-
 library(dplyr)
 library(purrr)
 library(stringr)
@@ -13,15 +12,15 @@ library(digest)
 library(fs)
 library(janitor)
 
-BASE_DIR <- "C:/Users/jlter/Desktop/Brussels School of Governance/Thesis/Assignment 4_Final Thesis/Code"
+BASE_DTA <- "C:/Users/jlter/Desktop/Brussels School of Governance/Thesis/Assignment 4_Final Thesis/Code"
 
-DIR_RAW  <- file.path(BASE_DIR, "data_raw")
-DIR_INT  <- file.path(BASE_DIR, "data_intermediate")
-DIR_OUT  <- file.path(BASE_DIR, "data_final")
+DTA_RAW  <- file.path(BASE_DTA, "data_raw")
+DTA_INT  <- file.path(BASE_DTA, "data_intermediate")
+DTA_OUT  <- file.path(BASE_DTA, "data_final")
 
-dir_create(DIR_RAW)
-dir_create(DIR_INT)
-dir_create(DIR_OUT)
+dta_create(DIR_RAW)
+dta_create(DIR_INT)
+dta_create(DIR_OUT)
 
 ua_string <- "BSoG_Thesis_AIactionplan_Scraper/1.0 (academic; contact: veco.Julian.Ter.Hedde@vub.be)"
 
