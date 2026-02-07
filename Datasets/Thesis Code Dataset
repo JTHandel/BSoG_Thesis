@@ -20,9 +20,9 @@ DTA_RAW  <- file.path(BASE_DTA, "data_raw")
 DTA_INT  <- file.path(BASE_DTA, "data_intermediate")
 DTA_OUT  <- file.path(BASE_DTA, "data_final")
 
-dta_create(DIR_RAW)
-dta_create(DIR_INT)
-dta_create(DIR_OUT)
+dta_create(DTA_RAW)
+dta_create(DTA_INT)
+dta_create(DTA_OUT)
 
 ua_string <- "BSoG_Thesis_AIactionplan_Scraper/1.0 (academic; contact: veco.Julian.Ter.Hedde@vub.be)"
 
