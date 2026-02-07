@@ -1,1 +1,50 @@
+#Linking API to R
 
+api_key <- "secret"
+library(httr)
+library(jsonlite)
+
+send_to_gpt <- function(text, api_key, model = "gpt-5.1") {
+  
+  url <- "https://api.openai.com/v1/responses"
+  
+  response <- POST(
+    url = url,
+    add_headers(
+      Authorization = paste("Bearer", api_key),
+      "Content-Type" = "application/json"
+    ),
+    body = toJSON(list(
+      model = model,
+      input = list(
+        list(
+          role = "system",
+          content = "You are an expert R programmer."
+        ),
+        list(
+          role = "user",
+          content = text
+        )
+      )
+    ), auto_unbox = TRUE)
+  )
+  
+  parsed_response <- content(response, as = "parsed")
+  
+  if (!is.null(parsed_response$output) &&
+      length(parsed_response$output) > 0 &&
+      length(parsed_response$output[[1]]$content) > 0) {
+    
+    return(parsed_response$output[[1]]$content[[1]]$text)
+    
+  } else {
+    print("Error: No valid response from API.")
+    print(parsed_response)
+    return(NULL)
+  }
+}
+
+send_to_gpt(
+  "What is the capital of the Netherlands",
+  api_key
+)
