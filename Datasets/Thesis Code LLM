@@ -45,6 +45,6 @@ send_to_gpt <- function(text, api_key, model = "gpt-5.1") {
 }
 
 send_to_gpt(
-  "What is the capital of the Netherlands",
+  "For an academic thesis investigating the balance between rights and innovation in the EU AI Action Plan. Insert "Thesis Code Scraper Draft" - I want this code to improve in order to scrape about 1000 documents from eurolex and EU parliament/commission/ENISA , everything that discusses the AI Action Plan or AI legislation. Explain to me exactly what every line does. Keep it ethically correct by including: ua_string <- "BSoG_Thesis_AIactionplan_Scraper/1.0 (academic; contact: veco.Julian.Ter.Hedde@vub.be)",
   api_key
 )
