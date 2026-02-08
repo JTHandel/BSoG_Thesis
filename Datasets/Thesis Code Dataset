@@ -1,10 +1,19 @@
-#Creating the Scraper
+#Creating the non- AI assisted draft for the scraper
+
+install.packages(c(
+  "dplyr","purrr","stringr","lubridate","tibble","readr",
+  "httr2","rvest","xml2","pdftools","digest","fs","janitor",
+  "urltools","progress","furrr","future", "eurlex"
+))
+
 
 library(dplyr)
 library(purrr)
 library(stringr)
 library(lubridate)
+library(tibble)
 library(readr)
+library(httr2)
 library(rvest)
 library(xml2)
 library(pdftools)
@@ -12,21 +21,31 @@ library(digest)
 library(fs)
 library(janitor)
 
-
 BASE_DIR <- "C:/Users/jlter/Desktop/Brussels School of Governance/Thesis/Assignment 4_Final Thesis/Code"
-DIR_RAW  <- file.path(BASE_DIR, "data_raw")
-DIR_INT  <- file.path(BASE_DIR, "data_intermediate")
-DIR_OUT  <- file.path(BASE_DIR, "data_final")
 
-dir_create(DIR_RAW)
-dir_create(DIR_INT)
-dir_create(DIR_OUT)
+DTA_RAW  <- file.path(BASE_DIR, "data_raw")
+DTA_INT  <- file.path(BASE_DIR, "data_intermediate")
+DTA_OUT  <- file.path(BASE_DIR, "data_final")
 
-CELEX_CSV <- file.path(DIR_INT, "celex_list.csv")
+dir_create(DTA_RAW)
+dir_create(DTA_INT)
+dir_create(DTA_OUT)
 
+ua_string <- "BSoG_Thesis_AIactionplan_Scraper/1.0 (academic; contact: veco.Julian.Ter.Hedde@vub.be)"
 
-make_doc_id <- function(x) digest(x, algo = "xxhash64")
-sleep_polite <- function(seconds = 0.4) Sys.sleep(seconds)
+safe_req <- function(url) {                           
+  request(url) |>                                          
+    req_user_agent(ua_string) |>                            
+    req_timeout(60) |>                                      
+    req_retry(                                              
+      max_tries = 5,                                        
+      backoff = ~ 2^(.x - 1)                                
+    )
+}
+
+make_doc_id <- function(url) digest(url, algo = "xxhash64")
+
+sleep_polite <- function(seconds = 0.5) Sys.sleep(seconds)
 
 download_file_cached <- function(url, dest_dir = DIR_RAW) {
   doc_id <- make_doc_id(url)
@@ -39,6 +58,7 @@ download_file_cached <- function(url, dest_dir = DIR_RAW) {
   path <- file.path(dest_dir, paste0(doc_id, ".", ext))
   
   if (!file.exists(path)) {
+    # Let R choose method (avoids wininet deprecation warning)
     suppressWarnings(
       utils::download.file(url, destfile = path, mode = "wb", quiet = TRUE)
     )
@@ -49,6 +69,7 @@ download_file_cached <- function(url, dest_dir = DIR_RAW) {
 }
 
 is_pdf_file <- function(path) {
+  # PDFs start with "%PDF"
   if (!file.exists(path)) return(FALSE)
   con <- file(path, "rb")
   on.exit(close(con), add = TRUE)
@@ -64,15 +85,24 @@ download_eurlex_pdf <- function(celex, dest_dir = DIR_RAW) {
     NA_character_
   }
   
+
   url_pdf <- paste0("https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:", celex)
   p1 <- try_download_and_check(url_pdf)
   if (!is.na(p1)) return(p1)
   
+
   url_html <- paste0("https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:", celex)
   html_path <- download_file_cached(url_html, dest_dir = dest_dir)
   
-  html_doc <- tryCatch(xml2::read_html(html_path), error = function(e) NULL)
-  if (is.null(html_doc)) return(NA_character_)
+  html_doc <- tryCatch(
+    xml2::read_html(html_path),
+    error = function(e) NULL
+  )
+  
+  if (is.null(html_doc)) {
+    warning("Could not parse EUR-Lex HTML for CELEX: ", celex)
+    return(download_file_cached(url_pdf, dest_dir = dest_dir))
+  }
   
   hrefs <- html_doc |>
     rvest::html_elements("a") |>
@@ -80,10 +110,11 @@ download_eurlex_pdf <- function(celex, dest_dir = DIR_RAW) {
     unique()
   
   hrefs <- hrefs[!is.na(hrefs) & nzchar(hrefs)]
+  
   hrefs <- xml2::url_absolute(hrefs, url_html)
   
   candidates <- hrefs[
-    stringr::str_detect(hrefs, "(?i)\\.pdf(\\?.*)?$|/TXT/PDF/")
+    stringr::str_detect(hrefs, "(?i)\\.pdf(\\?.*)?$|/TXT/PDF/|/TXT/HTML/.*(PDF|pdf)")
   ]
   
   candidates <- unique(c(
@@ -91,150 +122,25 @@ download_eurlex_pdf <- function(celex, dest_dir = DIR_RAW) {
     paste0("https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:", celex, "&from=EN"),
     paste0("https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:", celex, "&qid=", as.integer(Sys.time()))
   ))
-  
+
   for (u in candidates) {
     p <- try_download_and_check(u)
     if (!is.na(p)) return(p)
     sleep_polite(0.3)
   }
   
-  NA_character_
+  warning(
+    "Still could not obtain a real PDF for CELEX: ", celex,
+    ". Likely consent/redirect HTML. Try using the HTML text route instead."
+  )
+  download_file_cached(url_html, dest_dir = dest_dir)
 }
 
 
-clean_text_eu <- function(x) {
-  if (is.na(x)) return(NA_character_)
-  x <- str_replace_all(x, "\r", "\n")
-  x <- str_replace_all(x, "[\u00A0\u2007\u202F]", " ")
-  x <- str_replace_all(x, "(?im)^\\s*page\\s*\\d+\\s*(of\\s*\\d+)?\\s*$", "")
-  x <- str_replace_all(x, "(?im)^\\s*EN\\s*$", "")
-  x <- str_replace_all(x, "\\s+", " ")
-  x <- str_to_lower(x)
-  str_squish(x)
-}
-
-extract_pdf_text <- function(pdf_path) {
-  pages <- tryCatch(pdftools::pdf_text(pdf_path), error = function(e) NULL)
-  if (is.null(pages)) return(NA_character_)
-  paste(pages, collapse = "\n")
-}
-
-
-if (!file.exists(CELEX_CSV)) {
-  
-  message("celex_list.csv not found. Creating a template at:\n  ", CELEX_CSV)
-  
-  template <- tibble::tibble(
-    celex = c("52021PC0206"),
-    title = c("AI Act proposal (COM(2021) 206)"),
-    date = c("2021-04-21"),
-    institution = c("European Commission"),
-    doc_type = c("Commission proposal")
-  )
-  
-  readr::write_csv(template, CELEX_CSV)
-  
-  stop(
-    "Template created. Open celex_list.csv, add more CELEX IDs (one per row), save, and rerun the script."
-  )
-}
-
-celex_tbl <- readr::read_csv(CELEX_CSV, show_col_types = FALSE) |>
-  janitor::clean_names()
-
-if (!"celex" %in% names(celex_tbl)) stop("celex_list.csv must contain a column named 'celex'.")
-
-celex_tbl <- celex_tbl |>
-  mutate(
-    celex = str_trim(celex),
-    url_pdf = paste0("https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:", celex),
-    url_html = paste0("https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:", celex)
-  )
-
-
-message("Downloading PDFs (safe EUR-Lex method)...")
-
-downloads <- celex_tbl |>
-  mutate(
-    pdf_path = map_chr(celex, ~ download_eurlex_pdf(.x, dest_dir = DIR_RAW)),
-    pdf_ok   = map_lgl(pdf_path, ~ !is.na(.x) && is_pdf_file(.x)),
-    pdf_size = if_else(pdf_ok, file_info(pdf_path)$size, NA_real_)
-  )
-
-
-message("Extracting and cleaning text...")
-
-docs_long <- downloads |>
-  mutate(
-    doc_id = map_chr(celex, make_doc_id),
-    text_raw = map_chr(pdf_path, ~ if (!is.na(.x) && file.exists(.x)) extract_pdf_text(.x) else NA_character_),
-    text_clean = map_chr(text_raw, clean_text_eu),
-    nchar_raw = if_else(is.na(text_raw), NA_integer_, nchar(text_raw)),
-    nchar_clean = if_else(is.na(text_clean), NA_integer_, nchar(text_clean))
-  )
-
-
-MIN_CHARS <- 500
-docs_long <- docs_long |>
-  mutate(is_too_short = is.na(text_clean) | nchar_clean < MIN_CHARS)
-
-message("Too short after cleaning: ", sum(docs_long$is_too_short, na.rm = TRUE), " / ", nrow(docs_long))
-
-
-docs_long <- docs_long |>
-  mutate(hash_clean = map_chr(text_clean, ~ ifelse(is.na(.x), NA_character_, digest(.x, algo = "xxhash64"))))
-
-dedup_report <- docs_long |>
-  count(hash_clean, sort = TRUE, name = "dup_count") |>
-  filter(!is.na(hash_clean) & dup_count > 1)
-
-write_csv(dedup_report, file.path(DIR_OUT, "dedup_report.csv"))
-
-docs_dedup <- docs_long |>
-  arrange(doc_id) |>
-  group_by(hash_clean) |>
-  slice(1) |>
-  ungroup()
-
-
-metadata <- docs_dedup |>
-  transmute(
-    doc_id,
-    celex,
-    title = coalesce(.data$title, celex),
-    date = suppressWarnings(as.Date(.data$date)),
-    year = if_else(!is.na(date), year(date), NA_integer_),
-    institution = coalesce(.data$institution, "Unknown"),
-    doc_type = coalesce(.data$doc_type, "Unknown"),
-    url_pdf,
-    url_html,
-    pdf_path,
-    pdf_ok,
-    pdf_size,
-    nchar_raw,
-    nchar_clean,
-    hash_clean
-  )
-
-documents_long <- docs_dedup |>
-  select(doc_id, text_raw, text_clean)
-
-
-write_csv(metadata, file.path(DIR_OUT, "metadata_dataset.csv"))
-saveRDS(metadata, file.path(DIR_OUT, "metadata_dataset.rds"))
-saveRDS(documents_long, file.path(DIR_OUT, "documents_long.rds"))
-
-message("DONE.")
-message("Wrote: ", file.path(DIR_OUT, "metadata_dataset.csv"))
-message("Wrote: ", file.path(DIR_OUT, "documents_long.rds"))
-message("Wrote: ", file.path(DIR_OUT, "dedup_report.csv"))
-
-
-print(metadata |> summarize(
-  n_docs = n(),
-  n_pdf_ok = sum(pdf_ok, na.rm = TRUE),
-  min_date = suppressWarnings(min(date, na.rm = TRUE)),
-  max_date = suppressWarnings(max(date, na.rm = TRUE))
+p <- download_eurlex_pdf("52021PC0206", dest_dir = DIR_RAW)
+p
+is_pdf_file(p)
+file.info(p)$size
 ))
 
 
