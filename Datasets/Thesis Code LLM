@@ -1,6 +1,6 @@
 #Linking API to R
 
-api_key <- "secret"
+api_key <- ""
 library(httr)
 library(jsonlite)
 
