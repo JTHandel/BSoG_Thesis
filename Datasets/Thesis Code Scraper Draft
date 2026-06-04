@@ -21,7 +21,7 @@ library(digest)
 library(fs)
 library(janitor)
 
-BASE_DIR <- "C:/Users/jlter/Desktop/Brussels School of Governance/Thesis/Assignment 4_Final Thesis/Code"
+BASE_DIR <- "...Assignment 4_Final Thesis/Code"
 
 DTA_RAW  <- file.path(BASE_DIR, "data_raw")
 DTA_INT  <- file.path(BASE_DIR, "data_intermediate")
