@@ -1,0 +1,281 @@
+  library(dplyr)
+  library(stringr)
+  library(purrr)
+  library(readr)
+  library(tidyr)
+  library(fs)
+  library(janitor)
+  library(digest)
+  library(openxlsx)
+
+
+BASE_DIR       <- "(file folder)"
+DIR_OUT        <- file.path(BASE_DIR, "data_final")
+DIR_CLASSIFIER <- file.path(BASE_DIR, "data_classifier")
+dir_create(DIR_CLASSIFIER)
+
+METADATA_RDS  <- file.path(DIR_OUT, "metadata_dataset.rds")
+DOCUMENTS_RDS <- file.path(DIR_OUT, "documents_long.rds")
+
+PARAGRAPHS_RDS      <- file.path(DIR_CLASSIFIER, "paragraphs_classifier_ready.rds")
+PARAGRAPHS_CSV      <- file.path(DIR_CLASSIFIER, "paragraphs_classifier_ready.csv")
+
+CORPUS_RDS          <- file.path(DIR_CLASSIFIER, "paragraphs_corpus_curated.rds")
+CORPUS_CSV          <- file.path(DIR_CLASSIFIER, "paragraphs_corpus_curated.csv")
+
+LABEL_TEMPLATE_CSV  <- file.path(DIR_CLASSIFIER, "paragraphs_label_template.csv")
+LABEL_TEMPLATE_XLSX <- file.path(DIR_CLASSIFIER, "paragraphs_label_template.xlsx")
+
+MIN_PARAGRAPH_CHARS <- 120
+MAX_PARAGRAPH_CHARS <- 2500
+MIN_PARAGRAPH_WORDS <- 20
+
+REG_CAP_PER_DOC     <- 30      # max regulation paragraphs sampled per regulation
+PER_DOC_LABEL_CAP   <- 8       # max paragraphs per document in the label sample
+LABEL_SAMPLE_N      <- 600     # ceiling on the labelling template size
+
+DISCOURSE_TYPES <- c("Communication", "White Paper", "Resolution",
+                     "Opinion PDF", "Joint Opinion", "Commission proposal",
+                     "Topic page", "Report", "Policy page", "Press release",
+                     "Discovered URL")
+# filter to keep only substantive regulation paragraphs
+REG_KEYWORDS <- "innovation|fundamental rights|privacy|trustworthy|competitiv|safeguard|transparen"
+
+set.seed(11)
+
+#funtions
+
+`%||%` <- function(x, y) {
+  if (is.null(x) || length(x) == 0 || is.na(x)[1]) y else x
+}
+
+make_hash <- function(x) digest(x, algo = "xxhash64")
+
+bad_doc_title <- function(title) {
+  title_l <- str_to_lower(title %||% "")
+  str_detect(title_l, paste(c(
+    "^skip to main content$", "^print as pdf$", "^news highlights$",
+    "^subscribe to the news$", "^browse artificial intelligence$",
+    "^policies$", "^activities$", "^library$", "^funding$",
+    "^consultations$", "^events$", "^more$", "^download$",
+    "^pdftransparency$", "^[0-9]+$"
+  ), collapse = "|"))
+}
+
+chunk_long_block <- function(block, max_chars = MAX_PARAGRAPH_CHARS) {
+  if (nchar(block) <= max_chars) return(block)
+  sentences <- unlist(str_split(block, "(?<=[.!?])\\s+"))
+  chunks  <- character(0)
+  current <- ""
+  for (s in sentences) {
+    if (nchar(current) + nchar(s) + 1 > max_chars && nzchar(current)) {
+      chunks  <- c(chunks, str_trim(current))
+      current <- s
+    } else {
+      current <- if (nzchar(current)) paste(current, s) else s
+    }
+  }
+  if (nzchar(current)) chunks <- c(chunks, str_trim(current))
+  chunks
+}
+
+split_into_paragraphs <- function(text) {
+  if (is.na(text) || !nzchar(text)) return(character(0))
+  text <- str_replace_all(text, "\r", "\n")
+  text <- str_replace_all(text, "\n{3,}", "\n\n")
+  paragraphs <- unlist(str_split(text, "\n\\s*\n"))
+  paragraphs <- str_squish(paragraphs)
+  paragraphs <- paragraphs[paragraphs != ""]
+  paragraphs <- unlist(map(paragraphs, chunk_long_block))
+  paragraphs[paragraphs != ""]
+}
+
+clean_paragraph_model <- function(x) {
+  if (is.na(x)) return(NA_character_)
+  x |>
+    str_to_lower() |>
+    str_replace_all("https?://\\S+", " ") |>
+    str_replace_all("\\b\\S+@\\S+\\b", " ") |>
+    str_replace_all("[^a-z\\s]", " ") |>
+    str_replace_all("\\s+", " ") |>
+    str_squish()
+}
+
+is_bad_paragraph <- function(x) {
+  x_l <- str_to_lower(x %||% "")
+  str_detect(x_l, paste(c(
+    "^contents$", "^table of contents", "^annex\\b", "^references$",
+    "^bibliography$", "^related content$", "^share this page$",
+    "^last update", "^details$", "^publication date", "^author",
+    "^files$", "^download$", "^print as pdf$", "^skip to main content$",
+    "^news highlights$", "^subscribe to the news$", "^more information$",
+    "^contact$", "^related links$", "^page contents$", "^overview$"
+  ), collapse = "|")) |
+    (str_detect(x_l,
+                "subscribe to the news|print as pdf|share this page|skip to main content|news highlights"
+    ) & nchar(x_l) < 1000)
+}
+
+#load files
+
+metadata <- readRDS(METADATA_RDS) |> clean_names()
+docs     <- readRDS(DOCUMENTS_RDS) |> clean_names()
+
+message("Loaded metadata rows: ", nrow(metadata))
+message("Loaded document rows: ", nrow(docs))
+
+docs_full <- docs |> left_join(metadata, by = "doc_id")
+
+
+docs_valid <- docs_full |>
+  mutate(bad_doc_title = map_lgl(title, bad_doc_title)) |>
+  filter(
+    is_excluded == FALSE,
+    !bad_doc_title,
+    !is.na(text_readable),
+    nchar(text_readable) >= 800
+  )
+
+message("Valid documents used for paragraph extraction: ", nrow(docs_valid))
+
+
+paragraphs <- docs_valid |>
+  select(doc_id, canonical_id, source, url, celex, title, date, year,
+         institution, doc_type, language, text_readable) |>
+  mutate(paragraphs = map(text_readable, split_into_paragraphs)) |>
+  select(-text_readable) |>
+  unnest_longer(paragraphs, values_to = "paragraph_text") |>
+  mutate(
+    paragraph_hash        = map_chr(paragraph_text, make_hash),
+    paragraph_nchar       = nchar(paragraph_text),
+    paragraph_n_words     = str_count(paragraph_text, "\\S+"),
+    paragraph_model       = map_chr(paragraph_text, clean_paragraph_model),
+    paragraph_model_nchar = nchar(paragraph_model),
+    bad_paragraph         = map_lgl(paragraph_text, is_bad_paragraph)
+  )
+
+message("Raw paragraphs created: ", nrow(paragraphs))
+
+paragraphs_clean <- paragraphs |>
+  filter(
+    !is.na(paragraph_text),
+    !bad_paragraph,
+    paragraph_nchar >= MIN_PARAGRAPH_CHARS,
+    paragraph_nchar <= MAX_PARAGRAPH_CHARS,
+    paragraph_n_words >= MIN_PARAGRAPH_WORDS,
+    !is.na(paragraph_model),
+    paragraph_model_nchar >= 80
+  ) |>
+  distinct(paragraph_hash, .keep_all = TRUE) |>
+  group_by(doc_id) |>
+  mutate(paragraph_number = row_number()) |>
+  ungroup() |>
+  mutate(
+    paragraph_id = paste0(doc_id, "_p",
+                          str_pad(paragraph_number, 5, pad = "0"))
+  )
+
+message("Clean paragraphs retained: ", nrow(paragraphs_clean))
+
+#classifier ready dataset
+
+paragraphs_classifier_ready <- paragraphs_clean |>
+  mutate(
+    innovation_emphasis = NA_character_,
+    rights_emphasis     = NA_character_,
+    rights_substance    = NA_character_,
+    coder_notes         = NA_character_
+  ) |>
+  select(
+    paragraph_id, doc_id, paragraph_number, paragraph_hash,
+    source, institution, doc_type, date, year, title, url, celex, language,
+    paragraph_text, paragraph_model, paragraph_nchar, paragraph_n_words,
+    innovation_emphasis, rights_emphasis, rights_substance, coder_notes
+  )
+
+saveRDS(paragraphs_classifier_ready, PARAGRAPHS_RDS)
+write_csv(paragraphs_classifier_ready, PARAGRAPHS_CSV)
+
+#curated corpus, making sure the labeling set in the next step is well balanced (eg. less regulation)
+
+lang_variant_pattern <- paste0(
+  "^(BG|ES|CS|DA|DE|ET|EL|FR|GA|HR|IT|LV|LT|HU|MT|NL|PL|PT|RO|SK|SL|FI|SV)",
+  "[A-Za-z\u00C0-\u024F]"
+)
+
+discourse_part <- paragraphs_classifier_ready |>
+  filter(
+    doc_type %in% DISCOURSE_TYPES,
+    !title %in% c("CSČeština", "Last » Last page"),
+    !str_detect(title, lang_variant_pattern)
+  )
+
+regulation_part <- paragraphs_classifier_ready |>
+  filter(
+    doc_type == "Regulation",
+    str_detect(str_to_lower(paragraph_text), REG_KEYWORDS)
+  ) |>
+  group_by(doc_id) |>
+  slice_sample(n = REG_CAP_PER_DOC) |>
+  ungroup()
+
+corpus_curated <- bind_rows(discourse_part, regulation_part)
+
+saveRDS(corpus_curated, CORPUS_RDS)
+write_csv(corpus_curated, CORPUS_CSV)
+
+message("\n---- CURATED CORPUS BALANCE ----")
+print(corpus_curated |> count(doc_type, sort = TRUE))
+print(corpus_curated |> summarise(
+  total      = n(),
+  discourse  = sum(doc_type %in% DISCOURSE_TYPES),
+  regulation = sum(doc_type == "Regulation"),
+  reg_pct    = round(100 * mean(doc_type == "Regulation"), 1)
+))
+
+#labeling sample
+
+label_sample <- corpus_curated |>
+  group_by(doc_id) |>
+  slice_sample(n = PER_DOC_LABEL_CAP) |>
+  ungroup()
+
+if (nrow(label_sample) > LABEL_SAMPLE_N) {
+  label_sample <- label_sample |> slice_sample(n = LABEL_SAMPLE_N)
+}
+
+label_template <- label_sample |>
+  select(paragraph_id, doc_id, institution, doc_type, date, title,
+         paragraph_text, innovation_emphasis, rights_emphasis,
+         rights_substance, coder_notes)
+
+write_csv(label_template, LABEL_TEMPLATE_CSV)
+write.xlsx(label_template, LABEL_TEMPLATE_XLSX)
+
+label_template |> count(institution, sort = TRUE)
+
+#Diagnostics
+
+message("\n==================== SUMMARY ====================")
+print(corpus_curated |>
+        summarise(
+          n_paragraphs   = n(),
+          n_documents    = n_distinct(doc_id),
+          n_institutions = n_distinct(institution),
+          median_words   = median(paragraph_n_words, na.rm = TRUE),
+          mean_words     = round(mean(paragraph_n_words, na.rm = TRUE), 1)
+        ))
+
+message("\nCurated corpus by institution:")
+print(corpus_curated |> count(institution, sort = TRUE))
+
+message("\nLabel template by doc_type:")
+print(label_template |> count(doc_type, sort = TRUE))
+
+message("\nLabelling template size: ", nrow(label_template),
+        " paragraphs from ", n_distinct(label_template$doc_id), " documents")
+
+message("\nWrote:")
+message("  ", CORPUS_CSV, "   (curated corpus)")
+message("  ", LABEL_TEMPLATE_CSV)
+message("  ", LABEL_TEMPLATE_XLSX)
