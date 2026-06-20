@@ -1,0 +1,103 @@
+library(quanteda)
+library(quanteda.textmodels)
+library(readxl)
+library(dplyr)
+
+set.seed(2026)
+
+coded_path  <- "data_classifier/paragraphs_label_template_CODED.xlsx"
+corpus_rds  <- "data_classifier/paragraphs_corpus_curated.rds"
+corpus_csv  <- "data_classifier/paragraphs_corpus_curated.csv"
+out_csv     <- "data_classifier/paragraphs_corpus_classified.csv"
+out_rds     <- "data_classifier/paragraphs_corpus_classified.rds"
+
+coded <- read_excel(coded_path)
+if (file.exists(corpus_rds)) {
+  corpus_all <- readRDS(corpus_rds)
+} else {
+  corpus_all <- read.csv(corpus_csv, stringsAsFactors = FALSE)
+}
+cat("Coded rows:", nrow(coded), " | Corpus rows:", nrow(corpus_all), "\n")
+
+make_tokens <- function(txt) {
+  corpus(txt) |>
+    tokens(remove_punct = TRUE, remove_numbers = TRUE, remove_symbols = TRUE) |>
+    tokens_tolower() |>
+    tokens_remove(stopwords("en")) |>
+    tokens_wordstem(language = "en")
+}
+
+train_and_predict <- function(coded, corpus_all, label_col, keep_values) {
+  train <- coded |>
+    filter(!is.na(paragraph_text), .data[[label_col]] %in% keep_values) |>
+    mutate(.label = factor(.data[[label_col]], levels = keep_values))
+  
+  cat("\n[", label_col, "] training on", nrow(train), "paragraphs\n")
+  
+  train_dfm <- dfm(make_tokens(train$paragraph_text))
+  train_dfm <- dfm_trim(train_dfm, min_docfreq = 2)
+  
+  model <- textmodel_nb(train_dfm, train$.label, distribution = "multinomial")
+  
+  corpus_dfm <- dfm(make_tokens(corpus_all$paragraph_text)) |>
+    dfm_match(features = featnames(train_dfm))
+  
+  pred_class <- predict(model, newdata = corpus_dfm, type = "class")
+  pred_prob  <- predict(model, newdata = corpus_dfm, type = "probability")
+  conf <- apply(pred_prob, 1, max)
+  
+  list(class = as.character(pred_class), conf = conf)
+}
+
+p_inno  <- train_and_predict(coded, corpus_all, "innovation_emphasis", c("yes","no"))
+p_right <- train_and_predict(coded, corpus_all, "rights_emphasis",     c("yes","no"))
+p_subst <- train_and_predict(coded, corpus_all, "rights_substance",
+                             c("substantive","rhetorical","none"))
+
+#Assemble output
+out <- corpus_all |>
+  select(-any_of(c("innovation_emphasis","rights_emphasis",
+                   "rights_substance","coder_notes")))
+
+out$predicted_innovation <- p_inno$class
+out$conf_innovation      <- round(p_inno$conf, 3)
+out$predicted_rights     <- p_right$class
+out$conf_rights          <- round(p_right$conf, 3)
+out$predicted_substance  <- p_subst$class
+out$conf_substance       <- round(p_subst$conf, 3)
+
+labelled_ids <- coded |>
+  filter(!is.na(innovation_emphasis) | !is.na(rights_emphasis) |
+           !is.na(rights_substance)) |>
+  pull(paragraph_id)
+
+out$is_labelled <- out$paragraph_id %in% labelled_ids
+
+coded_lookup <- coded |>
+  select(paragraph_id,
+         human_innovation = innovation_emphasis,
+         human_rights     = rights_emphasis,
+         human_substance  = rights_substance)
+
+out <- out |>
+  left_join(coded_lookup, by = "paragraph_id") |>
+  mutate(
+    final_innovation = ifelse(is_labelled & !is.na(human_innovation),
+                              human_innovation, predicted_innovation),
+    final_rights     = ifelse(is_labelled & !is.na(human_rights),
+                              human_rights, predicted_rights),
+    final_substance  = ifelse(is_labelled & !is.na(human_substance),
+                              human_substance, predicted_substance)
+  )
+
+#Safe
+cat("\n===== Predicted distribution across FULL corpus (final labels) =====\n")
+cat("\ninnovation:\n"); print(table(out$final_innovation))
+cat("\nrights:\n");     print(table(out$final_rights))
+cat("\nsubstance:\n");  print(table(out$final_substance))
+cat(sprintf("\nLabelled paragraphs retained as ground truth: %d\n", sum(out$is_labelled)))
+cat(sprintf("Model-predicted paragraphs: %d\n", sum(!out$is_labelled)))
+
+saveRDS(out, out_rds)
+write.csv(out, out_csv, row.names = FALSE)
+cat("\nSaved:\n  ", out_rds, "\n  ", out_csv, "\n")
