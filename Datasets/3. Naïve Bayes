@@ -1,0 +1,108 @@
+library(quanteda)
+library(quanteda.textmodels)
+library(readxl)
+library(dplyr)
+
+set.seed(11)   # reproducibility: fixes the random fold assignment
+
+coded_path <- "data_classifier/paragraphs_label_template_CODED.xlsx"
+
+coded <- read_excel(coded_path)
+
+cat("Total rows in file:", nrow(coded), "\n")
+
+# quanteda dfm from character vector 
+make_tokens <- function(txt) {
+  corpus(txt) |>
+    tokens(remove_punct = TRUE, remove_numbers = TRUE, remove_symbols = TRUE) |>
+    tokens_tolower() |>
+    tokens_remove(stopwords("en")) |>
+    tokens_wordstem(language = "en")
+}
+
+run_cv <- function(data, label_col, keep_values, k = 5) {
+  
+  d <- data |>
+    filter(!is.na(paragraph_text),
+           .data[[label_col]] %in% keep_values) |>
+    mutate(.label = factor(.data[[label_col]], levels = keep_values))
+  
+  n <- nrow(d)
+  cat("\n=====================================================\n")
+  cat("Dimension:", label_col, "\n")
+  cat("Usable labelled paragraphs:", n, "\n")
+  cat("Class counts:\n")
+  print(table(d$.label))
+  
+  if (n < (k * 2)) {
+    cat("  [skipped: too few rows for", k, "folds]\n")
+    return(invisible(NULL))
+  }
+  
+  folds <- sample(rep(1:k, length.out = n))
+  
+  # collect predictions across all folds (each row predicted exactly once)
+  all_truth <- factor(character(0), levels = keep_values)
+  all_pred  <- factor(character(0), levels = keep_values)
+  
+  for (f in 1:k) {
+    train_idx <- which(folds != f)
+    test_idx  <- which(folds == f)
+    
+    train_tok <- make_tokens(d$paragraph_text[train_idx])
+    train_dfm <- dfm(train_tok)
+#Take away words that are not there for more than 2 times
+    train_dfm <- dfm_trim(train_dfm, min_docfreq = 2)
+    
+    test_tok <- make_tokens(d$paragraph_text[test_idx])
+    test_dfm <- dfm(test_tok) |> dfm_match(features = featnames(train_dfm))
+    
+    # train multinomial Naive Bayes
+    model <- textmodel_nb(train_dfm, d$.label[train_idx], distribution = "multinomial")
+    
+    preds <- predict(model, newdata = test_dfm, type = "class")
+    
+    all_truth <- c(all_truth, d$.label[test_idx])
+    all_pred  <- c(all_pred,  preds)
+  }
+  
+  # results
+  cm <- table(Truth = all_truth, Predicted = all_pred)
+  acc <- sum(diag(cm)) / sum(cm)
+  
+  cat("\nConfusion matrix (rows = truth, cols = predicted):\n")
+  print(cm)
+  cat(sprintf("\nOverall CV accuracy: %.1f%%\n", 100 * acc))
+  
+  cat("\nPer-class performance:\n")
+  for (cl in keep_values) {
+    tp <- ifelse(cl %in% rownames(cm) && cl %in% colnames(cm), cm[cl, cl], 0)
+    truth_n <- sum(all_truth == cl)
+    pred_n  <- sum(all_pred  == cl)
+    recall    <- ifelse(truth_n > 0, tp / truth_n, NA)
+    precision <- ifelse(pred_n  > 0, tp / pred_n,  NA)
+    cat(sprintf("  %-12s  n=%-4d  recall=%5.1f%%  precision=%5.1f%%\n",
+                cl, truth_n,
+                ifelse(is.na(recall), NA, 100 * recall),
+                ifelse(is.na(precision), NA, 100 * precision)))
+  }
+  
+  invisible(list(confusion = cm, accuracy = acc))
+}
+
+res_inno <- run_cv(coded, "innovation_emphasis",
+                   keep_values = c("yes", "no"))
+
+res_rights <- run_cv(coded, "rights_emphasis",
+                     keep_values = c("yes", "no"))
+
+res_subst <- run_cv(coded, "rights_substance",
+                    keep_values = c("substantive", "rhetorical", "none"))
+
+cat("\n=====================================================\n")
+cat("CV validation complete.\n")
+cat("Read the per-class recall/precision, especially for the smaller\n")
+cat("classes (rhetorical, n=58). High overall accuracy with near-zero\n")
+cat("recall on rhetorical would mean the model is just predicting the\n")
+cat("majority class - that is the thing to check before trusting it.\n")
+cat("=====================================================\n")
