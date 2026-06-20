@@ -1,0 +1,110 @@
+library(quanteda)
+library(quanteda.textmodels)
+library(readxl)
+library(dplyr)
+
+set.seed(2026)
+
+coded_path <- "data_classifier/paragraphs_label_template_CODED.xlsx"
+coded <- read_excel(coded_path)
+
+label_col   <- "rights_substance"
+keep_values <- c("substantive", "rhetorical", "none")
+k <- 5
+
+d <- coded |>
+  filter(!is.na(paragraph_text), .data[[label_col]] %in% keep_values) |>
+  mutate(.label = factor(.data[[label_col]], levels = keep_values))
+
+n <- nrow(d)
+cat("Usable paragraphs:", n, "\n")
+print(table(d$.label))
+
+# fix folds, so all models have the same split
+folds <- sample(rep(1:k, length.out = n))
+
+make_tokens <- function(txt) {
+  corpus(txt) |>
+    tokens(remove_punct = TRUE, remove_numbers = TRUE, remove_symbols = TRUE) |>
+    tokens_tolower() |>
+    tokens_remove(stopwords("en")) |>
+    tokens_wordstem(language = "en")
+}
+
+cv_variant <- function(weighting = c("count", "tfidf", "binary"),
+                       min_docfreq = 2,
+                       distribution = "multinomial") {
+  weighting <- match.arg(weighting)
+  
+  all_truth <- factor(character(0), levels = keep_values)
+  all_pred  <- factor(character(0), levels = keep_values)
+  
+  for (f in 1:k) {
+    tr <- which(folds != f); te <- which(folds == f)
+    
+    tr_dfm <- dfm(make_tokens(d$paragraph_text[tr]))
+    tr_dfm <- dfm_trim(tr_dfm, min_docfreq = min_docfreq)
+    
+    te_dfm <- dfm(make_tokens(d$paragraph_text[te])) |>
+      dfm_match(features = featnames(tr_dfm))
+    
+    if (weighting == "tfidf") {
+      tr_w <- dfm_tfidf(tr_dfm)
+      te_w <- dfm_tfidf(te_dfm)
+      dist <- "multinomial"
+    } else if (weighting == "binary") {
+      tr_w <- dfm_weight(tr_dfm, scheme = "boolean")
+      te_w <- dfm_weight(te_dfm, scheme = "boolean")
+      dist <- "Bernoulli"
+    } else {
+      tr_w <- tr_dfm; te_w <- te_dfm
+      dist <- "multinomial"
+    }
+    
+    model <- textmodel_nb(tr_w, d$.label[tr], distribution = dist)
+    preds <- predict(model, newdata = te_w, type = "class")
+    
+    all_truth <- c(all_truth, d$.label[te])
+    all_pred  <- c(all_pred,  preds)
+  }
+  
+  cm  <- table(Truth = all_truth, Predicted = all_pred)
+  acc <- sum(diag(cm)) / sum(cm)
+  rhet_recall <- if ("rhetorical" %in% rownames(cm))
+    cm["rhetorical", "rhetorical"] / sum(all_truth == "rhetorical") else NA
+  
+  list(cm = cm, acc = acc, rhet_recall = rhet_recall)
+}
+
+variants <- list(
+  "1. counts  | docfreq>=2 (baseline)" = function() cv_variant("count",  2),
+  "2. tf-idf  | docfreq>=2"            = function() cv_variant("tfidf",  2),
+  "3. binary  | docfreq>=2"           = function() cv_variant("binary", 2),
+  "4. counts  | docfreq>=1"           = function() cv_variant("count",  1),
+  "5. counts  | docfreq>=3"           = function() cv_variant("count",  3)
+)
+
+cat("\n=====================================================\n")
+cat("FEATURE COMPARISON for rights_substance (5-fold CV)\n")
+cat("=====================================================\n")
+
+summary_tbl <- data.frame()
+for (nm in names(variants)) {
+  res <- variants[[nm]]()
+  cat("\n---", nm, "---\n")
+  print(res$cm)
+  cat(sprintf("  overall accuracy: %.1f%%   |   RHETORICAL recall: %.1f%%\n",
+              100 * res$acc, 100 * res$rhet_recall))
+  summary_tbl <- rbind(summary_tbl,
+                       data.frame(variant = nm,
+                                  accuracy = round(100 * res$acc, 1),
+                                  rhetorical_recall = round(100 * res$rhet_recall, 1)))
+}
+
+cat("\n=====================================================\n")
+cat("SUMMARY (pick best by a balance of accuracy AND rhetorical recall):\n")
+cat("=====================================================\n")
+print(summary_tbl, row.names = FALSE)
+cat("\nNote: prefer a variant that lifts rhetorical recall without\n")
+cat("collapsing overall accuracy. If nothing clearly beats the baseline,\n")
+cat("keep counts/docfreq>=2 - simplest and already principled for NB.\n")
