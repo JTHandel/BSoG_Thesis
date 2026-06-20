@@ -1,0 +1,95 @@
+library(dplyr)
+
+df <- readRDS("data_classifier/paragraphs_corpus_classified.rds")
+cat("Loaded", nrow(df), "classified paragraphs.\n")
+
+shares_balance <- function(data) {
+  data |>
+    summarise(
+      n_paragraphs = n(),
+      innov_share  = mean(final_innovation == "yes", na.rm = TRUE),
+      rights_share = mean(final_rights == "yes", na.rm = TRUE),
+      subst_share  = mean(final_substance == "substantive", na.rm = TRUE),
+      rhet_share   = mean(final_substance == "rhetorical",  na.rm = TRUE),
+      none_share   = mean(final_substance == "none",        na.rm = TRUE)
+    ) |>
+    mutate(
+      balance_strict  = round(subst_share - innov_share, 3),
+      balance_lenient = round((subst_share + 0.5 * rhet_share) - innov_share, 3),
+      across(c(innov_share, rights_share, subst_share, rhet_share, none_share),
+             ~ round(.x, 3))
+    )
+}
+
+# Define action plan and rest of AI strategy
+strategy_patterns <- paste(
+  "Action Plan",
+  "Apply AI",
+  "AI omnibus",
+  "Digital Simplification Package",
+  "Data Union Strategy",
+  "boosting startups and innovation",   # the trustworthy-AI communication
+  "AI innovation package",
+  sep = "|"
+)
+
+# Optionally widen to implementing instruments/initiatives (set TRUE to include)
+include_initiatives <- FALSE
+initiative_patterns <- paste(
+  "AI Factories", "AI factories", "GenAI4EU", "InvestAI",
+  "Support ecosystem for AI innovation", "European AI Innovation Month",
+  "AI thrives from the lab", "AI made in Europe",
+  sep = "|"
+)
+
+pat <- if (include_initiatives)
+  paste(strategy_patterns, initiative_patterns, sep = "|") else strategy_patterns
+
+strategy <- df |> filter(grepl(pat, title, ignore.case = TRUE))
+
+cat("\n================ STRATEGY-CLUSTER MEMBERSHIP ================\n")
+cat("(verify this list - adjust strategy_patterns if anything is wrong)\n\n")
+membership <- strategy |>
+  group_by(title) |>
+  summarise(institution = first(institution), n_paragraphs = n(), .groups = "drop") |>
+  arrange(desc(n_paragraphs))
+print(as.data.frame(membership), row.names = FALSE)
+cat("\nTotal paragraphs in strategy cluster:", nrow(strategy), "\n")
+
+# Combined AI strategy score
+cat("\n================ Combined 'EU AI STRATEGY' BALANCE ================\n")
+pooled <- shares_balance(strategy)
+print(as.data.frame(pooled), row.names = FALSE)
+
+cat("\n================ component documents (individual scores) ================\n")
+by_component <- strategy |>
+  group_by(title) |>
+  group_modify(~ shares_balance(.x)) |>
+  ungroup() |>
+  arrange(balance_strict)
+print(as.data.frame(by_component), row.names = FALSE)
+
+cat("\n================ RIGHTS-SIDE COUNTERPOINT (EDPS and EDPB) ================\n")
+cat("(EDPB/EDPS response to the simplification agenda - reported separately)\n\n")
+counter <- df |>
+  filter(grepl("Joint Opinion on Simplification|support streamlining AI Act|Final Recommendations on the AI Act",
+               title, ignore.case = TRUE))
+if (nrow(counter) > 0) {
+  cp <- counter |>
+    group_by(title) |>
+    group_modify(~ shares_balance(.x)) |>
+    ungroup()
+  print(as.data.frame(cp), row.names = FALSE)
+} else {
+  cat("No counterpoint document matched - check titles.\n")
+}
+
+write.csv(membership,   "data_classifier/strategy_membership.csv",     row.names = FALSE)
+write.csv(pooled,       "data_classifier/strategy_pooled_balance.csv", row.names = FALSE)
+write.csv(by_component, "data_classifier/strategy_components.csv",      row.names = FALSE)
+
+cat("\nSaved: strategy_membership.csv, strategy_pooled_balance.csv, strategy_components.csv\n")
+cat("\nInterpretation: negative balance = innovation-leaning; ~0 = balanced;\n")
+cat("positive = substantive-rights-leaning. If the pooled strategy is negative\n")
+cat("under BOTH strict and lenient, and the components are consistently negative,\n")
+cat("the 'innovation-leaning strategy' finding is robust.\n")
