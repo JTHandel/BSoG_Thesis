@@ -94,10 +94,6 @@ log_download <- function(url, local_path, status, note = NA_character_) {
   append_manifest(row)
 }
 
-# ==============================================================================
-# 4. DOWNLOAD FUNCTIONS
-# ==============================================================================
-
 guess_ext_from_url <- function(url) {
   path_part <- sub("^https?://[^/]+", "", url)
   path_part <- sub("\\?.*$", "", path_part)
