@@ -1,0 +1,102 @@
+"doc_id","institution","doc_type","title","n_paragraphs","innov_share","rights_share","subst_share","rhet_share","none_share","balance_strict","balance_lenient"
+"0e0aebd343d63ef7","European Commission","Discovered URL","Commission makes €63.2 million available to support AI innovation in health and online safety",3,1,0,0,0,1,-1,-1
+"12261c2809600d9f","European Commission","Discovered URL","AI Continent Action Plan delivers major milestones",2,1,0.5,0,0.5,0.5,-1,-0.75
+"167d6119a8c618d9","European Commission","Discovered URL","building strategic leadership",4,1,0.5,0,0.5,0.5,-1,-0.75
+"47166c22cdbb868d","European Commission","Discovered URL","Robotics",6,1,0.167,0,0.167,0.833,-1,-0.917
+"631462a4e358cb09","European Commission","Discovered URL","AI Excellence: Enabling conditions for AI’s development and uptake",3,1,0.333,0,0.333,0.667,-1,-0.833
+"9b907ceb0f8878b1","European Commission","Discovered URL","AI Continent action plan",1,1,0,0,0,1,-1,-1
+"bc3355f5457c1959","European Commission","Discovered URL","High-level expert group on artificial intelligence",2,1,0.5,0,1,0,-1,-0.5
+"d8f24eabd949d8d8","European Commission","Discovered URL","Artificial Intelligence in Health",4,1,0,0,0,1,-1,-1
+"dd1ed82b92acb8ce","European Commission","Discovered URL","AI Factories and gigafactories",4,1,0.5,0,0.75,0.25,-1,-0.625
+"e0735826d3c6f791","European Commission","Discovered URL","Data Union Strategy",7,1,0.286,0,0.429,0.571,-1,-0.786
+"e6dd775477670b8c","European Commission","Discovered URL","The rise of the intelligent edge – Insights into MetaOS",3,1,0,0,0.333,0.667,-1,-0.833
+"ed91522536ab7383","European Data Protection Supervisor","Discovered URL","Data Protection Day 2026: Reset or refine?",1,1,1,0,1,0,-1,-0.5
+"fb95a5c5ae38ffcf","European Commission","Discovered URL","Communication on boosting startups and innovation in trustworthy artificial intelligence",3,1,0.667,0,1,0,-1,-0.5
+"feee051188ba7008","European Commission","Discovered URL","The Action Plan",2,1,0,0,0.5,0.5,-1,-0.75
+"ff3b5910b166bab2","European Commission","Discovered URL","European research development and deployment of AI",11,1,0.091,0,0.091,0.909,-1,-0.955
+"fc697de00822174b","European Commission","Discovered URL","Communication: AI made in Europe",18,1,0.389,0.056,0.444,0.5,-0.944,-0.722
+"998a82e259359b27","European Commission","Discovered URL","GenAI4EU",16,1,0.188,0.062,0.375,0.562,-0.938,-0.75
+"8a24b28070171d94","European Commission","Discovered URL","AI Continent Action Plan",8,0.875,0.125,0,0.125,0.875,-0.875,-0.812
+"1e061b5a4987377d","European Commission","Discovered URL","AI thrives from the lab to the market",7,1,0.286,0.143,0.143,0.714,-0.857,-0.786
+"6eb7908a8577570e","European Commission","Discovered URL","European AI Innovation Month",6,0.833,0.167,0,0.167,0.833,-0.833,-0.75
+"d41cc2c612ad8405","European Commission","Discovered URL","AI Continent Action Plan - Q&A",11,0.909,0.273,0.091,0.273,0.636,-0.818,-0.682
+"52857563d1fa625b","European Commission","Discovered URL","Apply AI Strategy",5,0.8,0,0,0,1,-0.8,-0.8
+"9cdad0a567b3bff0","European Commission","Discovered URL","Support ecosystem for AI innovation in Europe",10,0.9,0.2,0.1,0.1,0.8,-0.8,-0.75
+"54fe5e68353451b8","European Commission","Discovered URL","Digital Simplification Package",9,0.778,0.222,0,0.222,0.778,-0.778,-0.667
+"01b2f3f4413df824","European Commission","Discovered URL","AI innovation package to support Artificial Intelligence startups and SMEs",4,1,0.5,0.25,0.5,0.25,-0.75,-0.5
+"74bc968d4542c435","European Commission","Discovered URL","InvestAI Facility",4,0.75,0,0,0,1,-0.75,-0.75
+"c56e90e52944772c","European Commission","Discovered URL","Home",4,0.75,0.25,0,0.5,0.5,-0.75,-0.5
+"83c9b29b52fd6666","European Commission","Discovered URL","Horizon Europe",15,0.6,0,0,0,1,-0.6,-0.6
+"e038200eafe3d4d0","European Commission","Discovered URL","European Data Governance Act",10,0.7,0.5,0.1,0.6,0.3,-0.6,-0.3
+"5dc03dd408584c43","European Commission","Discovered URL","AI talent, skills and literacy",7,0.714,0.286,0.143,0.143,0.714,-0.571,-0.5
+"e29c81bca661564d","European Commission","Discovered URL","Launch of AI Act Service Desk",2,0.5,1,0,1,0,-0.5,0
+"f5e2eace15eec13c","European Commission","Discovered URL","Six additional consortia selected to establish AI factories",2,0.5,0.5,0,0.5,0.5,-0.5,-0.25
+"45e5b3145f97ec14","European Commission","Discovered URL","AI Office",11,0.545,0.636,0.091,0.545,0.364,-0.455,-0.182
+"84aa6329b41b1d77","European Parliament","Resolution","EP Resolution on AI in Criminal Law",39,0.795,0.538,0.359,0.128,0.513,-0.436,-0.372
+"3032c559b46351d7","European Commission","Discovered URL","EU Cybersecurity Strategy",7,0.429,0.286,0,0.286,0.714,-0.429,-0.286
+"66b8f2aea6ee8790","European Commission","Discovered URL","Joint press release by the Commission and the Kingdom of Morocco on the launch of a Digital Dialogue to strengthen strategic cooperation",3,0.333,0.333,0,0.333,0.667,-0.333,-0.167
+"70a6ca5f92bbc1d1","European Commission","Discovered URL","Proposal for a regulation laying down harmonised rules on AI",3,0.667,1,0.333,0.667,0,-0.333,0
+"97dc7f36d5084742","European Commission","Discovered URL","EU agrees to simplify AI rules to boost innovation and ban ‘nudification' apps to protect citizens",3,1,0.667,0.667,0,0.333,-0.333,-0.333
+"25a696d5ac574096","ENISA","Topic page","ENISA Artificial Intelligence and Next Gen Technologies",4,0.25,0.25,0,0.25,0.75,-0.25,-0.125
+"7b7bc7de228b5c46","European Commission","Discovered URL","Apply AI Alliance",4,0.25,0.5,0,0.5,0.5,-0.25,0
+"cc24d26f814ea8f6","European Commission","Discovered URL","Children’s protection online is high priority for 92% of Europeans",9,0.667,0.556,0.444,0.111,0.444,-0.222,-0.167
+"bea3f7a990b20925","ENISA","Discovered URL","Digital Identity and Data Protection",6,0.167,0.667,0,1,0,-0.167,0.333
+"3e46e2df425e312b","European Commission","Discovered URL","AI Act Service Desk",7,0.143,0.143,0,0.143,0.857,-0.143,-0.071
+"81f99ee2299c9c8e","European Commission","Discovered URL","AI Pact",8,0.25,0.625,0.125,0.5,0.375,-0.125,0.125
+"08a9745f18e9d466","ENISA","Discovered URL","National Cybersecurity Strategies (5)",4,0,0,0,0,1,0,0
+"36c7892b07950c6e","ENISA","Discovered URL","ENISA Cybersecurity and Privacy in AI medical imaging diagnosis",1,0,1,0,1,0,0,0.5
+"3ad82b3f49547c6e","ENISA","Discovered URL","State of cybersecurity in the EU",11,0,0,0,0,1,0,0
+"41545ce5c6d95e59","European Data Protection Board","Discovered URL","GDPR",1,0,0,0,0,1,0,0
+"5f410bf9d4147f0d","ENISA","Discovered URL","State of cybersecurity in the EU (49)",9,0,0,0,0,1,0,0
+"63f2fd2e870fd2c8","European Commission","Discovered URL","Accessibility statement",2,0,0,0,0,1,0,0
+"672f88a8c7bfd9b8","European Commission","Discovered URL","upcoming guidelines supporting the implementation of the AI Act",1,1,1,1,0,0,0,0
+"7ec795fa89513744","ENISA","Discovered URL","Mind the Gap in Standardisation of Cybersecurity for Artificial Intelligence",10,0.1,0.4,0.1,0.3,0.6,0,0.15
+"863620e55772e46f","European Commission","Discovered URL","Draft of the guidelines on the implementation of the transparency obligations for certain AI systems under Article 50 of the AI Act",4,0,1,0,1,0,0,0.5
+"8b451f5ff870adf0","ENISA","Discovered URL","National Cybersecurity Strategies",8,0,0.125,0,0.125,0.875,0,0.062
+"91d223ea6fc8a788","European Commission","Discovered URL","Guidelines on AI system definition",4,0.25,0.75,0.25,0.5,0.25,0,0.25
+"92ff3c5e2d078e7d","European Commission","Discovered URL","Guidelines on prohibited AI practices",4,0.25,0.75,0.25,0.5,0.25,0,0.25
+"94047a41311d421b","ENISA","Discovered URL","Cybersecurity of Critical Sectors",9,0,0.222,0,0.222,0.778,0,0.111
+"9729d73a4c6ccca5","ENISA","Discovered URL","Is Secure and Trusted AI Possible? The EU Leads the Way",9,0,0.333,0,0.556,0.444,0,0.278
+"9838edb6312bb57b","European Commission","Discovered URL","Standardisation of the AI Act",8,0.375,0.875,0.375,0.5,0.125,0,0.25
+"ba1b1e1485a7537c","ENISA","Report","ENISA Cybersecurity of AI and Standardisation",1,0,1,0,1,0,0,0.5
+"e9322711af2506af","European Commission","Discovered URL","AI omnibus",3,0.667,0.667,0.667,0,0.333,0,0
+"e9cba694ff0061be","ENISA","Report","ENISA Artificial Intelligence and Cybersecurity Research",2,0,0.5,0,1,0,0,0.5
+"1dab65553ea1a26d","European Commission","White Paper","White Paper on Artificial Intelligence",206,0.442,0.684,0.515,0.243,0.243,0.073,0.194
+"c72d8f4f6cab8324","ENISA","Discovered URL","Cybersecurity of Critical Sectors (49)",12,0,0.25,0.083,0.25,0.667,0.083,0.208
+"3c220133ea9f93a8","ENISA","Discovered URL","Digital Identity and Data Protection (59)",11,0,0.182,0.182,0,0.818,0.182,0.182
+"333f36196f31f694","European Data Protection Supervisor","Discovered URL","General Data Protection Regulation",5,0,0.8,0.2,0.4,0.4,0.2,0.4
+"b6fd00185667258a","European Parliament","Resolution","EP Resolution on AI in Education",84,0.381,0.881,0.583,0.321,0.095,0.202,0.363
+"7c96854cf20db640","European Commission","Discovered URL","Three studies on various aspects of article 5 of the AI Act",3,0.333,0.667,0.667,0,0.333,0.333,0.333
+"61fbed5a21e212ca","European Commission","Discovered URL","Beginning of the drawing-up process of the Code of Practice for General-Purpose AI",5,0,0.4,0.4,0,0.6,0.4,0.4
+"071442b5ecd49d3b","European Commission","Discovered URL","Compliance and enforcement",10,0.3,0.8,0.8,0,0.2,0.5,0.5
+"3d2d2d701c567bc8","European Data Protection Board","Topic page","EDPB artificial intelligence topic page",2,0,0.5,0.5,0,0.5,0.5,0.5
+"bb9c5228451b9d17","European Data Protection Supervisor","Discovered URL","press release",4,0,1,0.5,0.5,0,0.5,0.75
+"be8dc73f93158fdf","European Data Protection Supervisor","Topic page","EDPS artificial intelligence subject page",2,0,1,0.5,0.5,0,0.5,0.75
+"ed0cedc1b1b9f7ba","European Commission","Discovered URL","Three studies on technical solutions to mark and detect AI-generated content",2,0,0.5,0.5,0,0.5,0.5,0.5
+"3b47171b70ccf30b","European Parliament and Council","Regulation","Artificial Intelligence Act Regulation (EU) 2024/1689",30,0.2,0.867,0.767,0.1,0.133,0.567,0.617
+"97d8213f3a656ef4","European Commission","Discovered URL","Questions & Answers on the AI Act",30,0.167,0.967,0.733,0.233,0.033,0.567,0.683
+"8e98a738d9f89318","European Parliament and Council","Regulation","Data Act",30,0.2,0.967,0.8,0.167,0.033,0.6,0.683
+"6f4ba114f0e7db30","European Data Protection Supervisor","Joint Opinion","EDPB-EDPS Joint Opinion on Simplification of Harmonised AI Rules",26,0.192,0.962,0.923,0.038,0.038,0.731,0.75
+"a797d014c997a0c5","European Commission","Discovered URL","Commission publishes second draft of Code of Practice on Marking and Labelling of AI-generated content",4,0,1,0.75,0.25,0,0.75,0.875
+"83eec28f758280c8","European Parliament and Council","Regulation","Data Governance Act",30,0.133,0.967,0.9,0.067,0.033,0.767,0.8
+"229c31839cfaea12","European Data Protection Board","Discovered URL","EDPB brings clarity to data processing for scientific research, speeds up the finalisation of the anonymisation guidelines and approves first European data protection seal as a tool for transfers",5,0.2,1,1,0,0,0.8,0.8
+"aede03bc899611ab","European Commission","Discovered URL","Commission receives General-Purpose AI Code of Practice",10,0.1,0.9,0.9,0.1,0,0.8,0.85
+"be5fb4c04f051f7f","European Data Protection Board","Opinion PDF","EDPB Opinion 28/2024 on AI models PDF",66,0,1,0.985,0.015,0,0.985,0.992
+"08b1bf75243bbd5e","European Data Protection Board","Discovered URL","EDPB opinion on AI models: GDPR principles support responsible AI",3,0,1,1,0,0,1,1
+"1c6423734a6246d7","European Commission","Discovered URL","Governance and enforcement of the AI Act",5,0,1,1,0,0,1,1
+"2c211b5619be8733","European Commission","Discovered URL","Consultation on the draft guidelines on transparency obligations under the AI Act",1,0,1,1,0,0,1,1
+"58bfab59c22efcae","European Commission","Discovered URL","AI Act Whistleblower Tool",2,0,1,1,0,0,1,1
+"61290c44380b4f4b","European Data Protection Supervisor","Discovered URL","Our work on the AI Act",3,0,1,1,0,0,1,1
+"9dc321220ca129a1","European Commission","Discovered URL","Template for the public summary of training content of GPAI models",4,0,1,1,0,0,1,1
+"9e028a852cba74a1","European Commission","Discovered URL","Commission publishes guidelines for providers of General-Purpose AI",3,0,1,1,0,0,1,1
+"a020588f71bc7d2c","European Commission","Discovered URL","Beginning of the drawing-up process of the Code of Practice on Code of Practice on marking and labelling of AI-generated content",6,0,1,1,0,0,1,1
+"aa780be6bd1ade35","European Commission","Discovered URL","Guidelines on the scope of the obligations for providers of GPAI models",4,0,1,1,0,0,1,1
+"aeff2e4136d464da","European Commission","Discovered URL","Commission opens consultation on draft guidelines for AI transparency obligations",2,0,1,1,0,0,1,1
+"c089e2cef731d932","European Data Protection Board","Discovered URL","EDPB and EDPS support streamlining AI Act implementation but call for stronger safeguards to protect fundamental rights",4,0,1,1,0,0,1,1
+"cdae5a77b6fab0c5","European Data Protection Supervisor","Press release","EDPS Final Recommendations on the AI Act",3,0,1,1,0,0,1,1
+"cdc112832881628f","European Parliament and Council","Regulation","General Data Protection Regulation",30,0,1,1,0,0,1,1
+"d08b4d4b126ba418","European Data Protection Supervisor","Policy page","EDPS: Artificial Intelligence Act",2,0,1,1,0,0,1,1
+"d8630dbc7f9cb761","European Data Protection Board","Discovered URL","GDPR enforcement",2,0,1,1,0,0,1,1
+"ef103f8b6277724c","European Commission","Discovered URL","Living repository to foster learning and exchange on AI literacy",1,0,1,1,0,0,1,1
+"f42471a2901a9a64","European Data Protection Board","Discovered URL","Automated decision & profiling",1,0,1,1,0,0,1,1
+"fa69854974462334","European Data Protection Supervisor","Discovered URL","Joint Statement on AI-Generated Imagery and the Protection of Privacy",1,0,1,1,0,0,1,1

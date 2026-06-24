@@ -1,0 +1,7 @@
+"institution","n_paragraphs","innov_share","rights_share","subst_share","rhet_share","none_share","balance_strict","balance_lenient"
+"European Commission",572,0.533,0.558,0.36,0.255,0.385,-0.173,-0.045
+"European Parliament",123,0.512,0.772,0.512,0.26,0.228,0,0.13
+"ENISA",97,0.031,0.237,0.041,0.258,0.701,0.01,0.139
+"European Data Protection Supervisor",47,0.128,0.957,0.787,0.149,0.064,0.66,0.734
+"European Parliament and Council",120,0.133,0.95,0.867,0.083,0.05,0.733,0.775
+"European Data Protection Board",84,0.012,0.976,0.964,0.012,0.024,0.952,0.958
