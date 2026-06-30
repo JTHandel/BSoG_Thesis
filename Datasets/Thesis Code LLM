@@ -3,8 +3,58 @@
 api_key <- ""
 library(httr)
 library(jsonlite)
+library(dplyr)
+library(writexl)
 
-send_to_gpt <- function(text, api_key, model = "gpt-5.1") {
+system_instructions <- "
+You are an expert annotator coding EU policy text for a research project on AI governance.
+For the paragraph provided, classify it on three dimensions using these definitions,
+which mirror the manual coding guide used for human annotation.
+ 
+1. innovation_emphasis: 'yes' if the paragraph references any of: AI innovation,
+   competitiveness, startups, SMEs, investment, AI factories, AI deployment, uptake of AI,
+   industrial strategy, productivity, digital leadership, technological capacity, or
+   research and development. 'no' if none of these are present. 'unclear' if the paragraph
+   is ambiguous or borderline.
+ 
+2. rights_emphasis: 'yes' if the paragraph references any of: fundamental rights, privacy,
+   data protection, non-discrimination, fairness, transparency, accountability, human
+   oversight, safety, democracy, rule of law, legal safeguards, risk to citizens, prohibited
+   practices, or high-risk obligations. 'no' if none of these are present. 'unclear' if the
+   paragraph is ambiguous or borderline.
+ 
+3. rights_substance: classify as 'substantial' if rights content is connected to any of:
+   high-risk requirements, transparency obligations, human oversight, risk management,
+   conformity assessment, prohibited practices, complaints mechanisms, AI Office
+   enforcement, GDPR compliance, data protection safeguards, or a fundamental rights
+   impact assessment. Classify as 'rhetorical' if rights content consists only of phrases
+   such as: trustworthy AI, human-centric AI, AI that respects EU values, ethical AI,
+   responsible AI, safe and fair AI, or technology that works for people — i.e. rights
+   language with no mechanism, obligation, or safeguard linked to it. Classify as 'none'
+   if the paragraph contains no rights content at all. Classify as 'unclear' if the
+   paragraph is ambiguous or borderline.
+ 
+Return only the structured classification. Do not explain your reasoning.
+"
+
+json_schema <- list(
+  type = "json_schema",
+  name = "paragraph_classification",
+  strict = TRUE,
+  schema = list(
+    type = "object",
+    properties = list(
+      innovation_emphasis = list(type = "string", enum = list("yes", "no", "unclear")),
+      rights_emphasis     = list(type = "string", enum = list("yes", "no", "unclear")),
+      rights_substance    = list(type = "string", enum = list("substantial", "rhetorical", "none", "unclear"))
+    ),
+    required = list("innovation_emphasis", "rights_emphasis", "rights_substance"),
+    additionalProperties = FALSE
+  )
+)
+
+
+send_to_gpt <- function(text, api_key, model = "gpt-4o-mini", schema = json_schema) {
   
   url <- "https://api.openai.com/v1/responses"
   
@@ -19,16 +69,32 @@ send_to_gpt <- function(text, api_key, model = "gpt-5.1") {
       input = list(
         list(
           role = "system",
-          content = "You are an expert R programmer."
+          content = system_instructions
         ),
         list(
           role = "user",
           content = text
         )
-      )
+      ),
+      text = list(format = schema)
     ), auto_unbox = TRUE)
   )
   
+  parsed_response <- content(response, as = "parsed")
+  
+  if (!is.null(parsed_response$output) &&
+      length(parsed_response$output) > 0 &&
+      length(parsed_response$output[[1]]$content) > 0) {
+    
+    raw_text <- parsed_response$output[[1]]$content[[1]]$text
+    return(fromJSON(raw_text))
+    
+  } else {
+    print("Error: No valid response from API.")
+    print(parsed_response)
+    return(NULL)
+  }
+}
   parsed_response <- content(response, as = "parsed")
   
   if (!is.null(parsed_response$output) &&
@@ -44,7 +110,10 @@ send_to_gpt <- function(text, api_key, model = "gpt-5.1") {
   }
 }
 
-send_to_gpt(
-  "For an academic thesis investigating the balance between rights and innovation in the EU AI Action Plan. Insert "Thesis Code Scraper Draft" - I want this code to improve in order to scrape about 1000 documents from eurolex and EU parliament/commission/ENISA , everything that discusses the AI Action Plan or AI legislation. Explain to me exactly what every line does. Keep it ethically correct by including: ua_string <- "BSoG_Thesis_AIactionplan_Scraper/1.0 (academic; contact: veco.Julian.Ter.Hedde@vub.be)",
+test_result <- send_to_gpt(
+  "The proposal ensures that AI systems used in employment decisions are subject to mandatory conformity assessment, human oversight, and a right to explanation for affected individuals.",
   api_key
 )
+print(test_result)
+
+
